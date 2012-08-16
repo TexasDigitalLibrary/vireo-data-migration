@@ -3,8 +3,9 @@ import groovy.sql.Sql
 class committee_migrator {
     static void main(String[] args) {
         
-        def sql = Sql.newInstance("jdbc:postgresql://ec2-50-16-34-97.compute-1.amazonaws.com:5432/dspace-ut-etd-stage-1.2", "ut", "VXP6gpevbY")
-        def newsql = Sql.newInstance("jdbc:postgresql://localhost:5432/vireo", "postgres", "tdl1402")
+        def sql = Sql.newInstance("connect-string", "user", "password")
+        def newsql = Sql.newInstance("connect-string", "user", "password")
+
         
         newsql.execute("delete from committee_member")
         
