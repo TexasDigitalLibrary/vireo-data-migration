@@ -9,7 +9,6 @@ class committee_migrator {
     newsql.execute("delete from committee_member")
 
 
-    // All we have in the metadata field is the name and place
     // Metadata value 78 is contributor.committeeMember
     // Metadata value 77 is contributor.committeeChair
 
