@@ -3,33 +3,35 @@ import groovy.sql.Sql
 class SubmissionMigrator {
     static void main(String[] args) {
         
-        def sql = Sql.newInstance("connect-string", "user", "password")
-        def newsql = Sql.newInstance("connect-string", "user", "password")
+	println("Starting")
+
+        def sql = Sql.newInstance("jdbc:postgresql://ec2-50-16-34-97.compute-1.amazonaws.com:5432/dspace-ut-etd-stage-1.2", "ut", "VXP6gpevbY")
+        def newsql = Sql.newInstance("jdbc:postgresql://localhost:5432/vireo", "postgres", "tdl1402")
         
-        newsql.execute("delete from actionlog")
-        newsql.execute("delete from submission")
+	println("Deleteing")
+
+        newsql.execute("truncate attachment cascade")
+
+	println("after attchment")
+
+        newsql.execute("truncate actionlog cascade")
+	println("after actionlog")
+
+        newsql.execute("truncate submission cascade")
+
+	println("Done deleting")
         
-        sql.eachRow("select * from vireosubmission order by submission_id"){ 
+        sql.eachRow("select * from vireosubmission order by submission_id asc"){ 
             
             row -> 
-            println("----")
-            println ("title: " + getMetadataValue(sql, row.submission_id, "64"))
-            
-            println("UMI: " + getUmiRelease(row.umi));
-            println("Degree: " + getDegree(sql, row.submission_id))
-            println("Degree Level: " + getDegreeLevel(sql, row.submission_id))
-            println("Department: " + getDepartment(sql, row.submission_id))
-            println("Abstract: " + getAbstract(sql, row.submission_id))
-            println("Keywords: " + getKeywords(sql, row.submission_id))
-            println("Title: " + getDocumentTitle(sql, row.submission_id))
-            println ("type : " + getType(sql, row.submission_id))
-            println ("major : " + getMajor(sql, row.item_id, row.applicant_id))
-            println ("name : " + getName(sql, row.submission_id))
+            println ("title: " + getDocumentTitle(sql, row.submission_id))
             
             def name = getName(sql, row.submission_id)
             def name_parts = null
             def fname, lname
             
+	    // This should be made more robust
+
             if (name != null) {
                 name_parts = name.tokenize(",")
                 println("Lastname : " + name_parts[0])
@@ -43,14 +45,14 @@ class SubmissionMigrator {
             }
             
             def params = [row.submission_id, getUmiRelease(row.umi), row.approval_date, row.college, null, row.committee_email_address, 
-            "Committee Dispposition", row.email_hash, null, getDegree(sql, row.item_id), 
-            getDegreeLevel(sql, row.item_id), getDepartment(sql, row.item_id), "Deposit Id", getAbstract(sql, row.item_id),
+             row.email_hash, null, getDegree(sql, row.item_id), 
+            getDegreeLevel(sql, row.item_id), getDepartment(sql, row.item_id), getDepositId(sql, row.item_id), getAbstract(sql, row.item_id),
             getKeywords(sql, row.item_id), getDocumentTitle(sql, row.item_id), getType(sql, row.item_id), 1, 12, null, null,
-            row.license_agreement_date, getMajor(sql, row.item_id, row.applicant_id), getSubStatus(row.status),
-            row.year_of_birth, fname, lname, "", row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), 226, row.applicant_id]
+            row.license_agreement_date, getMajor(sql, row.item_id), getSubStatus(row.status),
+            row.year_of_birth, fname, lname, "", row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), 231, row.applicant_id]
             
             // Fix lastactionlog and lastactionlogentry
-            
+            // Fix embargotypeid 
             newsql.execute '''insert into submission (
             id,                     
             umirelease,                     
@@ -58,7 +60,6 @@ class SubmissionMigrator {
             college,                        
             committeeapprovaldate,                  
             committeecontactemail,                  
-            committeedisposition,                   
             committeeemailhash,                     
             committeeembargoapprovaldate,                   
             degree,                 
@@ -85,7 +86,7 @@ class SubmissionMigrator {
             embargotype_id,                 
             submitter_id)
             values (
-            ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+            ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
             )''', params
             
         }
@@ -97,20 +98,6 @@ class SubmissionMigrator {
         else
             return true 
     }
-    
-    static String getDocumentFilename(Sql sql, int id) {
-        
-        println "item_id " + id
-        
-        def rows = sql.rows("select bitstream.name from item2bundle, bundle, bitstream where item2bundle.item_id = " + id + " and bundle.bundle_id = item2bundle.bundle_id and bundle.primary_bitstream_id = bitstream.bitstream_id")
-        
-        if (rows[0] != null) {
-            return rows[0].name
-        } else
-        return null
-        
-    } 
-    
     
     static String getDegree(Sql sql, Integer id) {
         return getMetadataValue(sql, id, "72");
@@ -144,6 +131,15 @@ static String getName(Sql sql, Integer id) {
     return getMetadataValue(sql, id, "9");
 }
 
+static String getDepositId(Sql sql, Integer id) {
+    return getMetadataValue(sql, id, "25");
+}
+
+static String getMajor(Sql sql, Integer id) {
+    return getMetadataValue(sql, id, "74");
+}
+
+
 static String getKeywords(Sql sql, Integer id) {
     def ret = ""
     
@@ -168,23 +164,6 @@ static String getMetadataValue(Sql sql, Integer id, String mv){
     return null
 }
 
-static String getMajor(Sql sql, Integer id, Integer applicant_id) {
-    def rows = sql.rows("select tdledupersonmajor from eperson where eperson.eperson_id= " + applicant_id)
-    
-    if (rows[0] != null) {
-        return rows[0].tdledupersonmajor
-    } else
-    return null
-}
-
-
-def getFirstName(Sql sql, Integer id, Integer applicant_id) {
-    def rows = sql.rows("select firstname, lastname, initials from eperson where eperson.eperson_id= " + applicant_id)
-    
-    
-    
-    
-}
 
 static String getSubStatus(Integer stat) {
     
