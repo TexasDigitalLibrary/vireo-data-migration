@@ -3,8 +3,10 @@ import groovy.sql.Sql
 class item_migrator {
 	static void main(String[] args) {
 		
-		def sql = Sql.newInstance("jdbc:postgresql://ec2-50-16-34-97.compute-1.amazonaws.com:5432/dspace-ut-etd-stage-1.2", "ut", "PASSWORD")
-		def newsql = Sql.newInstance("jdbc:postgresql://localhost:5432/vireo", "postgres", "PASSWORD")
+ 		def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
+		
+		def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
+		def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 		
 		newsql.execute("delete from attachment")
 		

@@ -1,9 +1,10 @@
-import groovy.sql.Sql
 class person_migrator {
 	static void main(String[] args) {
 		
-		def sql = Sql.newInstance("jdbc:postgresql://ec2-50-16-34-97.compute-1.amazonaws.com:5432/dspace-ut-etd-stage-1.2", "ut", "PASSWORD")
-		def newsql = Sql.newInstance("jdbc:postgresql://localhost:5432/vireo", "postgres", "PASSWORD")
+ 		def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
+		
+		def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
+		def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 		
 		
 		newsql.execute("delete from jpapersonimpl_affiliations")
@@ -11,6 +12,7 @@ class person_migrator {
 		newsql.execute("delete from attachment")
 		newsql.execute("delete from actionlog")
 		newsql.execute("delete from submission")
+		newsql.execute("delete from person where id != 99999")
 		
 		sql.eachRow("select eperson_id, email, phone, tdlhomepostaladdress, firstname, lastname, initials, tdledupersonmajor, netid from eperson"){ 
 			
@@ -19,7 +21,8 @@ class person_migrator {
 			String by = getBirthYear(sql, row.eperson_id) 
 			if (by == null) by = ''
 				
-				def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), row.firstname + " " + row.initials + " " + row.lastname, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), 1]
+				
+				def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), row.firstname + " " + row.initials + " " + row.lastname, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
 			
 			newsql.execute 'insert into person (id, birthyear, currentcollege, currentdegree, currentdepartment, currentemailaddress, currentmajor, currentphonenumber, currentpostaladdress, displayname, email, firstname, lastname, middlename, netid, permanentemailaddress, permanentphonenumber, permanentpostaladdress, role) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', params
 			
@@ -114,6 +117,23 @@ class person_migrator {
 		return getMetadataValue(sql, id, "76");
 	}
 	
+	// In old vireo - students have no role
+	
+	static Integer getRole(Sql sql, Integer id) {
+		def rows = sql.rows("select eperson_group_id from epersongroup2eperson where eperson_id = " + new Integer(id).toString() )		
+		
+		if (rows[0] == null) 
+			return 0
+		
+		if (rows[0].eperson_group_id == 3) {
+			println "role: " + rows[0].eperson_group_id
+			return 4
+		} else {
+			println "getRole returning zero"
+			return 0
+		}
+		
+	}
 	
 }
 
