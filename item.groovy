@@ -12,11 +12,11 @@ class item_migrator {
 		
 		sql.eachRow("""select mimetype, submission_id, applicant_id, item.last_modified, vireosubmission.item_id, bitstream.bitstream_id, internal_id, name 
 		from item, vireosubmission, item2bundle,  bundle2bitstream, bitstream, bitstreamformatregistry
-		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc  """) { 
+		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc limit 10 """) { 
 			
 			row -> 
-			println("Name: " + row.name)
-			println("format: " + row.mimetype)
+			
+			// if row.name - ends with pdf.txt then skip
 			
 			//public enum AttachmentType {
 			// UNKNOWN,
@@ -33,7 +33,6 @@ class item_migrator {
 			
 			try {
 				def cmd =  "ln /mnt/ut-etd/" + file_path + "/" + row.internal_id + " /mnt/attachments/" + row.internal_id
-				println(cmd);
 				def proc = cmd.execute()
 				proc.waitFor()
 			} catch (Exception ex) {
@@ -84,12 +83,14 @@ class item_migrator {
 				?,?,?,?,?,?,?
 				)''', params
 				
-				
 			}
-			
 		}
 		
-		
+                // Update sequence counter
+
+                def row = newsql.firstRow("select (max(id) + 1) max from attachment")
+                newsql.execute("alter sequence seq_attachment restart with " + row.max)
+ 
 	}
 	
 	// Compute the path in the dspace asset directory given the long numeric name
