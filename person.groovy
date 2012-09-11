@@ -39,8 +39,8 @@ class person_migrator {
 
 		// Update sequence counter
 		
-		def row = newsql.firstRow("select max(id) from person")
-		newsql.execute("alter sequence seq_person restart with " + row.max + 1)
+		def row = newsql.firstRow("select (max(id) + 1) max from person")
+		newsql.execute("alter sequence seq_person restart with " + row.max)
 	}
 	
 	// Return a value for a metadata field for a given person
