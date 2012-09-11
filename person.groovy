@@ -1,15 +1,15 @@
 import groovy.sql.Sql
+import java.security.MessageDigest
 
 class person_migrator {
 	static void main(String[] args) {
-		
+    
  		def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
 		
-		def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
-		def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
+    def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
+    def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 		
 		// Delete from dependent tables - due to database constraints
-		
 		newsql.execute("delete from person")
 		newsql.execute("delete from jpapersonimpl_affiliations")
 		newsql.execute("delete from committee_member")
@@ -17,13 +17,13 @@ class person_migrator {
 		newsql.execute("delete from actionlog")
 		newsql.execute("delete from submission")
 
+    
 		// Main driving query - select all epersons from old vireo
-		
 		sql.eachRow("select eperson_id, email, phone, tdlhomepostaladdress, firstname, lastname, initials, tdledupersonmajor, netid from eperson"){ 
 			
 			row -> 
 			
-			// Fix birth year if null
+      // Fix birth year if null
 			
 			String by = getBirthYear(sql, row.eperson_id) 
 			if (by == null) by = ''
@@ -37,10 +37,30 @@ class person_migrator {
 			
 		}
 
+    // Create a migration admin
+    if (config.create_admin) {
+      def id = newsql.firstRow("select max(id) from person").max
+      if (id == null)
+        id = 1;
+      else
+        id++;
+
+      String email = config.admin_email;
+      String first = config.admin_first;
+      String last = config.admin_last;
+      String displayName = first + " " + last;
+      String netid = config.admin_netid;
+      String passwordHash = getPasswordHash(id,config.admin_password);
+      int role = 4;
+
+      def params = [id, email, netid, passwordHash, first, last, displayName, role]
+      newsql.execute 'insert into person (id, email, netid, passwordhash, firstname, lastname, displayname, role) values(?, ?, ?, ?, ?, ?, ?, ?)', params
+    } 
+
 		// Update sequence counter
 		
 		def row = newsql.firstRow("select max(id) from person")
-		newsql.execute("alter sequence seq_person restart with " + row.max + 1)
+    newsql.execute("alter sequence seq_person restart with " + row.max + 1)
 	}
 	
 	// Return a value for a metadata field for a given person
@@ -170,5 +190,29 @@ class person_migrator {
 			return 0
 		}
 	}
+
+
+  static String getPasswordHash(Long id, String raw) {
+  
+      // Get the password salt
+      byte[] salt = new byte[24];
+      Random random = new Random(id);
+      random.nextBytes(salt);
+      
+      
+      // Generate the hash using the pre-defined algorithm.
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      md.update(salt);
+      byte[] byteHash = md.digest(raw.getBytes());
+
+      // Convert the hash to hex values for easy storage and portability.
+      StringBuffer hash = new StringBuffer();
+      for (int i = 0; i < byteHash.length; i++) {
+        hash.append(Integer.toString((byteHash[i] & 0xff) + 0x100, 16).substring(1));
+      }
+      
+      // Retun the hash.
+      return hash.toString();
+  }
 }
 

@@ -1,8 +1,22 @@
-old_db_url = "JDBC URL Of DB For Old Vireo"
-old_db_user = "OLD_USER"
-old_db_pwd = "OLD_PASSWORD"
-new_db_url = "JDBC URL Of DB For New Vireo"
-new_db_user = "NEW_USER"
-new_db_pwd = "NEW_PASSWORD"
 
 
+// Old dspace vireo installation information
+old_db_url = "jdbc:postgresql://hostname:port/database_name"
+old_db_user = "user"
+old_db_pwd = "pass"
+
+
+// New vireo installation information
+new_db_url = "jdbc:postgresql://hostname:port/database_name"
+new_db_user = "user"
+new_db_pwd = "pass"
+
+
+
+// If you would like an admin account created then turn these settings on.
+create_admin = true
+admin_email = "migration@tdl.org"
+admin_first = "Migration"
+admin_last = "Admin"
+admin_netid = null 
+admin_password = "changeme"
