@@ -58,9 +58,8 @@ class person_migrator {
     } 
 
 		// Update sequence counter
-		
-		def row = newsql.firstRow("select max(id) from person")
-    newsql.execute("alter sequence seq_person restart with " + row.max + 1)
+		def row = newsql.firstRow("select (max(id) + 1) max from person")
+		newsql.execute("alter sequence seq_person restart with " + row.max)
 	}
 	
 	// Return a value for a metadata field for a given person
@@ -180,14 +179,14 @@ class person_migrator {
 		def rows = sql.rows("select eperson_group_id from epersongroup2eperson where eperson_id = " + new Integer(id).toString() )		
 		
 		if (rows[0] == null) 
-			return 0
+			return 1
 
 		// in old vireo - 3 is administrator
 		
 		if (rows[0].eperson_group_id == 3) {
 			return 4
 		} else {
-			return 0
+			return 1
 		}
 	}
 
