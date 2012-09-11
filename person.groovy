@@ -1,3 +1,6 @@
+import groovy.sql.Sql
+
+
 class person_migrator {
 	static void main(String[] args) {
 		
