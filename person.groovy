@@ -1,3 +1,5 @@
+import groovy.sql.Sql
+
 class person_migrator {
 	static void main(String[] args) {
 		
@@ -6,30 +8,42 @@ class person_migrator {
 		def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
 		def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 		
+		// Delete from dependent tables - due to database constraints
 		
+		newsql.execute("delete from person")
 		newsql.execute("delete from jpapersonimpl_affiliations")
 		newsql.execute("delete from committee_member")
 		newsql.execute("delete from attachment")
 		newsql.execute("delete from actionlog")
 		newsql.execute("delete from submission")
-		newsql.execute("delete from person where id != 99999")
+
+		// Main driving query - select all epersons from old vireo
 		
 		sql.eachRow("select eperson_id, email, phone, tdlhomepostaladdress, firstname, lastname, initials, tdledupersonmajor, netid from eperson"){ 
 			
 			row -> 
 			
+			// Fix birth year if null
+			
 			String by = getBirthYear(sql, row.eperson_id) 
 			if (by == null) by = ''
 				
 				
-				def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), row.firstname + " " + row.initials + " " + row.lastname, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
+			def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), row.firstname + " " + row.initials + " " + row.lastname, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
+			
+			// Insert into new vireo table
 			
 			newsql.execute 'insert into person (id, birthyear, currentcollege, currentdegree, currentdepartment, currentemailaddress, currentmajor, currentphonenumber, currentpostaladdress, displayname, email, firstname, lastname, middlename, netid, permanentemailaddress, permanentphonenumber, permanentpostaladdress, role) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', params
 			
 		}
+
+		// Update sequence counter
 		
+		def row = newsql.firstRow("select max(id) from person")
+		newsql.execute("alter sequence seq_person restart with " + row.max + 1)
 	}
 	
+	// Return a value for a metadata field for a given person
 	
 	static String getMetadataValue(Sql sql, Integer id, String mv){
 		
@@ -42,6 +56,8 @@ class person_migrator {
 		
 	}
 	
+	// Get birth year
+	
 	static String getBirthYear(Sql sql, Integer id) {
 		def rows = sql.rows("select year_of_birth from vireosubmission where applicant_id = " + id)
 		
@@ -50,6 +66,8 @@ class person_migrator {
 		else
 			return null
 	}
+
+	// Get current phone number 
 	
 	static String getCurrentPhoneNumber(Sql sql, Integer id) {
 		def rows = sql.rows("select current_phone from vireosubmission where applicant_id = " + id)
@@ -60,6 +78,7 @@ class person_migrator {
 			return null
 	}
 	
+	// Get current address
 	
 	static String getCurrentAddress(Sql sql, Integer id) {
 		def rows = sql.rows("select current_address from vireosubmission where applicant_id = " + id)
@@ -70,6 +89,8 @@ class person_migrator {
 			return null
 	}
 	
+	// Get current email address
+
 	static String getEmailAddress(Sql sql, Integer id) {
 		def rows = sql.rows("select email_address from vireosubmission where applicant_id = " + id)
 		
@@ -78,6 +99,8 @@ class person_migrator {
 		else
 			return null
 	}
+
+	// Get permanent email address
 	
 	static String getPermanentEmail(Sql sql, Integer id) {
 		def rows = sql.rows("select permanent_email from vireosubmission where applicant_id = " + id)
@@ -87,6 +110,8 @@ class person_migrator {
 		else
 			return null
 	}
+
+	// Get permanent phone
 	
 	static String getPermanentPhone(Sql sql, Integer id) {
 		def rows = sql.rows("select permanent_phone from vireosubmission where applicant_id = " + id)
@@ -96,6 +121,8 @@ class person_migrator {
 		else
 			return null
 	}
+
+	// Get permanent  address
 	
 	static String getPermanentAddress(Sql sql, Integer id) {
 		def rows = sql.rows("select permanent_address from vireosubmission where applicant_id = " + id)
@@ -105,14 +132,24 @@ class person_migrator {
 		else
 			return null
 	}
+
+
+	// Get college setting - metadata value 74
+
 	static String getCollege(Sql sql, Integer id) {
 		return getMetadataValue(sql, id, "74");
 	}
 	
+
+	// Get degree setting - metadata value 72
+
 	static String getDegree(Sql sql, Integer id) {
 		return getMetadataValue(sql, id, "72");
 	}
 	
+
+	// Get current department - metadata 76
+
 	static String getDepartment(Sql sql, Integer id) {
 		return getMetadataValue(sql, id, "76");
 	}
@@ -124,16 +161,14 @@ class person_migrator {
 		
 		if (rows[0] == null) 
 			return 0
+
+		// in old vireo - 3 is administrator
 		
 		if (rows[0].eperson_group_id == 3) {
-			println "role: " + rows[0].eperson_group_id
 			return 4
 		} else {
-			println "getRole returning zero"
 			return 0
 		}
-		
 	}
-	
 }
 
