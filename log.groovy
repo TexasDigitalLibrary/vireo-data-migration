@@ -10,11 +10,15 @@ class log_migrator {
 		
 		newsql.execute("delete from actionlog")
 		
+		// Main driving SQL query
+
 		sql.eachRow("select * from vireolog order by submission_id asc "){ 
 			
 			row -> 
 			println(row.log_id)
 			
+			// Attachment ID ??
+
 			if (submissionExists(sql, row.submission_id)) {
 				
 				def params = [
@@ -37,6 +41,12 @@ class log_migrator {
 			}
 			
 		}
+
+                // Update sequence counter
+
+                def row = newsql.firstRow("select (max(id) + 1) max from actionlog")
+                newsql.execute("alter sequence seq_actionlog restart with " + row.max)
+
 	}
 
 	// Determine if a submission exists
