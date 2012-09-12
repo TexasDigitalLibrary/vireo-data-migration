@@ -4,15 +4,26 @@ class item_migrator {
 	static void main(String[] args) {
 		
  		def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
-		
+
 		def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
 		def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 		
+    // check that we have paths defined.
+    if (!config.old_asset_path)
+      throw new RuntimeException("old_asset_path is not defined, unable to migrate assets.");
+    if (!config.new_asset_path)
+      throw new RuntimeException("new_asset_path is not defined, unable to migrate assets.");
+
+
+    // Clear out any old attachments, both on disk and in the database.
 		newsql.execute("delete from attachment")
-		
+    "rm -rf ${config.new_asset_path}/*".execute().waitFor();
+
+
+
 		sql.eachRow("""select mimetype, submission_id, applicant_id, item.last_modified, vireosubmission.item_id, bitstream.bitstream_id, internal_id, name 
 		from item, vireosubmission, item2bundle,  bundle2bitstream, bitstream, bitstreamformatregistry
-		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc limit 10 """) { 
+		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc limit 100""") { 
 			
 			row -> 
 			
@@ -32,7 +43,7 @@ class item_migrator {
 			// We should probably create a UUID and 'mv' the asset into the attachments directory - with that nam
 			
 			try {
-				def cmd =  "ln /mnt/ut-etd/" + file_path + "/" + row.internal_id + " /mnt/attachments/" + row.internal_id
+				def cmd =  "cp ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
 				def proc = cmd.execute()
 				proc.waitFor()
 			} catch (Exception ex) {
