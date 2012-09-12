@@ -50,6 +50,12 @@ class committee_migrator {
 			?,?,?,?,?,?,?
 			)''', params
 		}
+
+                // Update sequence counter
+
+                def row = newsql.firstRow("select (max(id) + 1) max from committee_member")
+                newsql.execute("alter sequence seq_committee_member restart with " + row.max)
+
 		
 	}
 }

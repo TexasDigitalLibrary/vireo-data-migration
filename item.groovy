@@ -12,7 +12,7 @@ class item_migrator {
 		
 		sql.eachRow("""select mimetype, submission_id, applicant_id, item.last_modified, vireosubmission.item_id, bitstream.bitstream_id, internal_id, name 
 		from item, vireosubmission, item2bundle,  bundle2bitstream, bitstream, bitstreamformatregistry
-		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc limit 10 """) { 
+		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc """) { 
 			
 			row -> 
 			
@@ -101,8 +101,6 @@ class item_migrator {
         	def p3 = name.substring(4,6)
         	
         	def path = p1 + "/" + p2 + "/" + p3 
-        	println("Name: " + name)
-        	println("Path: " + path)
         	return path
         }
         
@@ -111,18 +109,12 @@ class item_migrator {
         static Boolean is_name_unique(Sql sql, String name, Integer submission_id) {
         	def params = [submission_id, name]
         	
-        	println("is unique " + name + " id " + submission_id);
-        	
         	def row = sql.rows("select name from attachment where submission_id = ? and name = ?", params) 
         	
-        	println("row size " + row.size)
-        	
         	if (row.size ==0 ) {
-        		println("size " + row.size + " returning true ")
         		return true
         		
         	} else {
-        		println("size " + row.size + " returning  false")
         		return false
         	}
         }
