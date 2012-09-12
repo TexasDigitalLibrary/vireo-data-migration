@@ -2,7 +2,7 @@ import groovy.sql.Sql
 import java.security.MessageDigest
 
 class person_migrator {
-	static void main(String[] args) {
+  static void main(String[] args) {
     
  		def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
 		
@@ -16,7 +16,6 @@ class person_migrator {
 		newsql.execute("delete from attachment")
 		newsql.execute("delete from actionlog")
 		newsql.execute("delete from submission")
-
     
 		// Main driving query - select all epersons from old vireo
 		sql.eachRow("select eperson_id, email, phone, tdlhomepostaladdress, firstname, lastname, initials, tdledupersonmajor, netid from eperson"){ 
@@ -29,7 +28,7 @@ class person_migrator {
 			if (by == null) by = ''
 				
 				
-			def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), row.firstname + " " + row.initials + " " + row.lastname, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
+			def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), null, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
 			
 			// Insert into new vireo table
 			
@@ -74,6 +73,17 @@ class person_migrator {
 		return null
 		
 	}
+
+  static String getMetadataFieldId(Sql sql, String schema, String element, String qualifier) {
+    
+    def params = [schema, element, qualifier];
+   
+    if (qualifier == null) params = [schema,element];
+
+    def row = sql.firstRow("select f.metadata_field_id from metadatafieldregistry f, metadataschemaregistry s where f.metadata_schema_id = s.metadata_schema_id AND s.short_id = ? AND f.element = ? AND f.qualifier " + ( qualifier == null ? " IS NULL " : " = ? "), params);
+
+    return row.metadata_field_id;
+  }
 	
 	// Get birth year
 	
@@ -153,24 +163,27 @@ class person_migrator {
 	}
 
 
-	// Get college setting - metadata value 74
-
+	// Get college setting   
 	static String getCollege(Sql sql, Integer id) {
-		return getMetadataValue(sql, id, "74");
+
+    def rows = sql.rows("select college from vireosubmission where applicant_id = " + id);
+
+    if (rows[0] != null)
+      return rows[0].college
+    else
+      return null
 	}
 	
 
-	// Get degree setting - metadata value 72
-
+	// Get thesis.degree.discipline
 	static String getDegree(Sql sql, Integer id) {
-		return getMetadataValue(sql, id, "72");
+		return getMetadataValue(sql, id, getMetadataFieldId(sql, "thesis","degree","discipline"));
 	}
 	
 
-	// Get current department - metadata 76
-
+	// Get thesis.degree.department
 	static String getDepartment(Sql sql, Integer id) {
-		return getMetadataValue(sql, id, "76");
+		return getMetadataValue(sql, id, getMetadataFieldId(sql, "thesis","degree","department"));
 	}
 	
 	// In old vireo - students have no role
