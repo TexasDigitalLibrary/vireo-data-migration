@@ -69,10 +69,10 @@ class SubmissionMigrator {
           }
 
 
-          println("["+row.submission_id+"]Unable to parse: '"+name+"' with vireo's regex, using fall back parsing: l='"+lname+"', f='"+fname+"', m='"+mname+"'");
+          println("["+row.submission_id+"] Unable to parse student '"+name+"', using alternative parsing: l='"+lname+"', f='"+fname+"', m='"+mname+"'");
         }
       } else {
-        println("["+row.submission_id+"] null name "+name);
+        println("["+row.submission_id+"] Has a blank student name.");
       }
 
 			// Compute embargotype_id
@@ -86,8 +86,12 @@ class SubmissionMigrator {
 				et =  1
 			else if (row.embargo_duration == -1)
 				et = 4
-			
-			def params = [row.submission_id, getUmiRelease(row.umi), row.approval_date, row.college, null, row.committee_email_address, 
+		
+      def committeeApprovalDate = null;
+      if (row.committee_approval != null)
+        committeeApprovalDate = new java.sql.Date(System.currentTimeMillis());
+
+			def params = [row.submission_id, getUmiRelease(row.umi), row.approval_date, row.college, committeeApprovalDate, row.committee_email_address, 
 			row.email_hash, null, getDegree(sql, row.item_id), 
 			getDegreeLevel(sql, row.item_id), getDepartment(sql, row.item_id), getDepositId(sql, row.item_id), getAbstract(sql, row.item_id),
 			getKeywords(sql, row.item_id), getDocumentTitle(sql, row.item_id), getType(sql, row.item_id), getGraduationMonth(sql, row.item_id),
