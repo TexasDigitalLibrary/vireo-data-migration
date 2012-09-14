@@ -75,18 +75,6 @@ class SubmissionMigrator {
         println("["+row.submission_id+"] Has a blank student name.");
       }
 
-			// Compute embargotype_id
-			
-			def et = 1
-			if (row.embargo_duration == 12)
-				et = 2
-			else if (row.embargo_duration == 24)
-				et = 3
-			else if (row.embargo_name.equals("None"))
-				et =  1
-			else if (row.embargo_duration == -1)
-				et = 4
-		
       def committeeApprovalDate = null;
       if (row.committee_approval != null)
         committeeApprovalDate = new java.sql.Date(System.currentTimeMillis());
@@ -97,7 +85,7 @@ class SubmissionMigrator {
 			getKeywords(sql, row.item_id), getDocumentTitle(sql, row.item_id), getType(sql, row.item_id), getGraduationMonth(sql, row.item_id),
       getGraduationYear(sql, row.item_id), new java.sql.Date(System.currentTimeMillis()), "Migrated from old vireo system.",
 			row.license_agreement_date, getMajor(sql, row.item_id), getSubStatus(row.status),
-			row.year_of_birth, fname, lname, mname, row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), et, row.applicant_id]
+			row.year_of_birth, fname, lname, mname, row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), getEmbargoType(newsql, row.embargo_name), row.applicant_id]
 			
 			// Fix lastactionlog and lastactionlogentry
 
@@ -300,6 +288,15 @@ class SubmissionMigrator {
     return row.metadata_field_id;
   }
 
+  static Integer getEmbargoType(Sql sql, String name) {
+    
+    def row = sql.firstRow("select id from embargo_type where name = ?",[name]);
+
+    if (row == null)
+      return null;
+    else
+      return row.id;
+  }
 
 
 	// Translate submission status
