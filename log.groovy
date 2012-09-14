@@ -15,14 +15,18 @@ class log_migrator {
 		sql.eachRow("select * from vireolog order by submission_id asc "){ 
 			
 			row -> 
-			println(row.log_id)
 			
 			// Attachment ID ??
 
 			if (submissionExists(sql, row.submission_id)) {
-				
+
+        def person_id = null;
+        if (personExists(newsql,row.eperson_id))
+          person_id = row.eperson_id;
+
+
 				def params = [
-				row.log_id, row.date, row.log_entry, (row.private==null?false:row.private), getSubStatus(row.submission_status), null, row.eperson_id, row.submission_id
+				row.log_id, row.date, row.log_entry, (row.private==null?false:row.private), getSubStatus(row.submission_status), null, person_id, row.submission_id
 				]       
 				
 				newsql.execute '''insert into actionlog (
@@ -68,8 +72,15 @@ class log_migrator {
 		def state = [10:'InProgress', 20:'Submitted', 30:'InReview', 40:'NeedsCorrection', 50:'WaitingOnRequirements', 60:'Approved', 
 		70:'PendingPublication', 80:'Published', 90:'OnHold', 100:'Withdrawn', 110:'Cancelled']
 		
-		println("getSubStatus: " + state[stat])
 		return state[stat]
 	}
+
+  static boolean personExists(Sql sql, Integer personId) {
+    def rows = sql.rows("select id from person where id = "+personId);
+
+    if (rows[0] != null) return true;
+    return false;
+  }
+
 }
 
