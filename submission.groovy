@@ -35,7 +35,7 @@ class SubmissionMigrator {
 		newsql.execute("truncate submission cascade")
 		
 		// Main driver query - for each submission in old vireo
-
+    int nameExceptions = 0;
 		sql.eachRow("select * from vireosubmission order by submission_id asc"){ 
 			
 			row -> 
@@ -68,7 +68,7 @@ class SubmissionMigrator {
             lname = name;
           }
 
-
+          nameExceptions++;
           println("["+row.submission_id+"] Unable to parse student '"+name+"', using alternative parsing: l='"+lname+"', f='"+fname+"', m='"+mname+"'");
         }
       } else {
@@ -139,6 +139,7 @@ class SubmissionMigrator {
 			
 		}
 
+    println("Student name exceptions: "+nameExceptions);
                 // Update sequence counter
 
                 def row = newsql.firstRow("select (max(id) + 1) max  from submission")

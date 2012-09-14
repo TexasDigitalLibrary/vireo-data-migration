@@ -10,12 +10,12 @@ class person_migrator {
     def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 		
 		// Delete from dependent tables - due to database constraints
-		newsql.execute("delete from person")
-		newsql.execute("delete from jpapersonimpl_affiliations")
-		newsql.execute("delete from committee_member")
-		newsql.execute("delete from attachment")
-		newsql.execute("delete from actionlog")
-		newsql.execute("delete from submission")
+    newsql.execute("truncate attachment cascade")
+    newsql.execute("truncate actionlog cascade")
+    newsql.execute("truncate committee_member cascade")
+    newsql.execute("truncate submission cascade")
+    newsql.execute("truncate person cascade")
+
     
 		// Main driving query - select all epersons from old vireo
 		sql.eachRow("select eperson_id, email, phone, tdlhomepostaladdress, firstname, lastname, initials, tdledupersonmajor, netid from eperson"){ 
