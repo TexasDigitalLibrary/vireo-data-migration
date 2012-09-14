@@ -20,13 +20,40 @@ class item_migrator {
     "rm -rf ${config.new_asset_path}/*".execute().waitFor();
 
 
+    sql.eachRow("""
+SELECT DISTINCT 
+  sub.submission_id, 
+  sub.applicant_id, 
+  item.last_modified, 
+  sub.item_id, 
+  bun.name as bundle_name,
+  bun.primary_bitstream_id,
+  bit.bitstream_id, 
+  bit.internal_id, 
+  fr.mimetype, 
+  bit.name
 
-		sql.eachRow("""select mimetype, submission_id, applicant_id, item.last_modified, vireosubmission.item_id, bitstream.bitstream_id, internal_id, name 
-		from item, vireosubmission, item2bundle,  bundle2bitstream, bitstream, bitstreamformatregistry
-		where vireosubmission.item_id = item.item_id and vireosubmission.item_id = item2bundle. item_id and item2bundle.bundle_id = bundle2bitstream.bundle_id and bitstream.bitstream_id =  bundle2bitstream.bitstream_id and bitstreamformatregistry.bitstream_format_id = bitstream.bitstream_format_id order by submission_id asc """) { 
-			
+FROM
+  item, 
+  vireosubmission sub,
+  item2bundle i2b,  
+  bundle bun,
+  bundle2bitstream b2b,
+  bitstream bit,
+  bitstreamformatregistry fr
+
+WHERE 
+  sub.item_id = item.item_id AND
+  sub.item_id = i2b. item_id AND
+  i2b.bundle_id = bun.bundle_id AND
+  i2b.bundle_id = b2b.bundle_id AND
+  bit.bitstream_id =  b2b.bitstream_id AND
+  fr.bitstream_format_id = bit.bitstream_format_id 
+
+ORDER BY bitstream_id ASC
+""") {
 			row -> 
-			
+		
 			// if row.name - ends with pdf.txt then skip
 			
 			//public enum AttachmentType {
@@ -37,6 +64,22 @@ class item_migrator {
 			// ARCHIVED,
 			// FEEDBACK
 			
+      int type = 0; // unknown
+      if ("ORIGINAL".equals(row.bundle_name) || "CONTENT".equals(row.bundle_name)) {
+
+        if (row.primary_bitstream_id == row.bitstream_id) {
+          type = 1; // Primary
+        } else {
+          type = 2; // Supplemental
+        }
+      } else if ("LICENSE".equals(row.bundle_name)) {
+        type = 3; // license
+      } else if ("ARCHIVE".equals(row.bundle_name)) {
+        type = 4; // Archived
+      } else if ("NOTES".equals(row.bundle_name)) {
+        type = 5; // feedback
+      }
+
 			def file_path = name_to_path(row.internal_id)
 			
 			// Make a link from the archive into the attachments directory
@@ -44,7 +87,11 @@ class item_migrator {
 			
 			try {
 				def cmd =  "cp ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
-				def proc = cmd.execute()
+				
+        if (config.link_assets) 
+          cmd = "ln -s ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
+  
+        def proc = cmd.execute()
 				proc.waitFor()
 			} catch (Exception ex) {
 				println("Exception " + ex);
@@ -60,13 +107,13 @@ class item_migrator {
 			// shave off the trailing number before adding the new one on
 			
 			while(!is_name_unique(newsql, subname, row.submission_id)) {
-				println("Fixing Name: " + subname)
+				//println("Fixing Name: " + subname)
 				def name_parts = subname.tokenize(".")
 				subname = name_parts[0] + count + "." + name_parts[1]
-				println "\n\n** New Name: " + subname
+				//println "\n\n** New Name: " + subname
 				count++
 			}
-	
+
 			// Need to figure out which is the primary document. Currently default to 1 (all are primary)
 			
 			def params = [
@@ -74,12 +121,11 @@ class item_migrator {
 			row.internal_id + "|" + row.mimetype,                        
 			row.last_modified,                      
 			subname,                       
-			1,
+			type,
 			row.applicant_id,
 			row.submission_id
 			]       
-			
-			
+		
 			if (row.name != null)  {
 				newsql.execute '''insert into attachment (
 				id,                 

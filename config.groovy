@@ -11,7 +11,7 @@ new_db_url = "jdbc:postgresql://hostname:port/database_name"
 new_db_user = "user"
 new_db_pwd = "pass"
 old_asset_path = "/mnt/new_vireo/attachments/"
-
+link_assets = true // Should assets be copied or just symlinked
 
 // If you would like an admin account created then turn these settings on.
 create_admin = true
