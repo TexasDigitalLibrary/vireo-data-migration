@@ -1,17 +1,18 @@
 
 
 // Old dspace vireo installation information
-old_db_url = "jdbc:postgresql://etddb1.l/vireo"
-old_db_user = "vireo_old"
-old_db_pwd = "VT1=0adb"
-old_asset_path = "/mnt/vireo_tamu/assetstore/" 
+old_db_url = "jdbc:postgresql://hostname:port/database_name"
+old_db_user = "user"
+old_db_pwd = "pass"
+old_asset_path = "/mnt/old_vireo/assetstore/" 
+old_entity_id = "school.edu" // Identifiers are typicaly you school's dns name.
 
 
 // New vireo installation information
-new_db_url = "jdbc:postgresql://pgdev3.l/vireo_tamu"
-new_db_user = "vireo_tamu"
-new_db_pwd = "VT1=0abd"
-new_asset_path = "/data/playapps/vireo-data/attachments"
+new_db_url = "jdbc:postgresql://hostname:port/database_name"
+new_db_user = "user"
+new_db_pwd = "pass"
+new_asset_path = "/mnt/new_viero/attachments/"
 link_assets = true // Should assets be copied or just symlinked
 
 
