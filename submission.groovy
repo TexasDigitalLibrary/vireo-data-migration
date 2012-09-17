@@ -143,8 +143,6 @@ class SubmissionMigrator {
             def actionParams = [customActions++, true, Integer.valueOf(action),row.submission_id]
             newsql.execute '''insert into custom_action_value (id, value, definition_id, submission_id) values (?,?,?,?)''', actionParams;
 
-          } else {
-            println "Skipping definitio: ${action}";
           }
         }
       }
