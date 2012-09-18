@@ -89,7 +89,9 @@ class SettingsMigrator {
     }
 
     def row = newsql.firstRow("select (max(id) + 1) max  from "+table)
-    newsql.execute("alter sequence seq_"+table+" restart with " + row.max )
+
+    if (row.max != null)
+        newsql.execute("alter sequence seq_"+table+" restart with " + row.max )
   }
 
   // Set a particular configuration value on the new vireo.
