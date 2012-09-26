@@ -22,25 +22,25 @@ class committee_migrator {
         + "(?:\\s*,\\s*(?:\\d+)[-]?)?"); // birth year
 
   static void main(String[] args) {
-		
- 		def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
-		
-		def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
-		def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
-		
-		newsql.execute("delete from committee_member")
-		
-		
-		// Metadata value 78 is contributor.committeeMember
-		// Metadata value 77 is contributor.committeeChair
+    
+    def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
+    
+    def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
+    def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
+    
+    newsql.execute("delete from committee_member")
+    
+    
+    // Metadata value 78 is contributor.committeeMember
+    // Metadata value 77 is contributor.committeeChair
     int memberField = Integer.valueOf(getMetadataFieldId(sql, "dc", "contributor", "committeeMember"));
-    int chairField  = Integer.valueOf(getMetadataFieldId(sql, "dc", "contributor", "committeechair"));	
+    int chairField  = Integer.valueOf(getMetadataFieldId(sql, "dc", "contributor", "advisor")); 
 
-    int nameExceptions = 0;	
-		sql.eachRow("select text_value, place, submission_id, metadata_value_id, metadata_field_id from vireosubmission, metadatavalue where metadatavalue.item_id = vireosubmission.item_id and (metadata_field_id = ${memberField} or metadata_field_id = ${chairField}) order by submission_id, place"){ 
-			
-			row -> 
-			def name = row.text_value
+    int nameExceptions = 0; 
+    sql.eachRow("select text_value, place, submission_id, metadata_value_id, metadata_field_id from vireosubmission, metadatavalue where vireosubmission.collection_id = "+config.old_collection_id + " and metadatavalue.item_id = vireosubmission.item_id and (metadata_field_id = ${memberField} or metadata_field_id = ${chairField}) order by submission_id, place"){ 
+      
+      row -> 
+      def name = row.text_value
 
 
       def lname = null;
@@ -78,24 +78,38 @@ class committee_migrator {
       } else {
         println("["+row.submission_id+"] Has a blank committee member.");
       }
+      
+      if (lname != null && lname.length() > 255) {
+        println("["+row.submission_id+"] Last name too long, truncating.");
+        lname = lname.substring(0,255);
+      }
+      if (fname != null && fname.length() > 255) {
+        println("["+row.submission_id+"] First name too long, truncating.");
+        fname = fname.substring(0,255);
+      }
+      
+      if (mname != null && mname.length() > 255) {
+          println("["+row.submission_id+"] Middle name too long, truncating.");
+          mname = mname.substring(0,255);
+      }
 
-			def params = [
-			row.metadata_value_id, (row.metadata_field_id == chairField ? true: false), row.place, fname, lname, mname, row.submission_id
-			]	
-			
-			newsql.execute '''insert into committee_member (
-			id,
-			chair,			
-			displayorder,			
-			firstname,			
-			lastname,			
-			middlename,			
-			submission_id
-			)
-			values (
-			?,?,?,?,?,?,?
-			)''', params
-		}
+      def params = [
+      row.metadata_value_id, (row.metadata_field_id == chairField ? true: false), row.place, fname, lname, mname, row.submission_id
+      ] 
+      
+      newsql.execute '''insert into committee_member (
+      id,
+      chair,      
+      displayorder,     
+      firstname,      
+      lastname,     
+      middlename,     
+      submission_id
+      )
+      values (
+      ?,?,?,?,?,?,?
+      )''', params
+    }
 
     println("Committee name exceptions= "+nameExceptions);
                 // Update sequence counter
@@ -103,8 +117,8 @@ class committee_migrator {
                 def row = newsql.firstRow("select (max(id) + 1) max from committee_member")
                 newsql.execute("alter sequence seq_committee_member restart with " + row.max)
 
-		
-	}
+    
+  }
 
   static String getMetadataFieldId(Sql sql, String schema, String element, String qualifier) {
     
@@ -118,4 +132,5 @@ class committee_migrator {
   }
 
 }
+
 

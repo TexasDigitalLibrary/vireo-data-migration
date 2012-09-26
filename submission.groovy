@@ -13,33 +13,33 @@ class SubmissionMigrator {
   static String REGEX_FOR_STANDALONE_MIDDLE_INITIAL = "(?:\\s*(\\p{L})[.]?\\s*)?";
 
   static Pattern PATTERN_FOR_AUTHORITATIVE_NAME = Pattern.compile( //
-  REGEX_FOR_INTEGRATED_NAME_PART // last name
-  + "(?:\\s*,\\s*" // delimiter between first and last names
-  + REGEX_FOR_INTEGRATED_NAME_PART // first name
-  + REGEX_FOR_INTEGRATED_MIDDLE_INITIAL + ")?" // middle
-  // initial
-  + "(?:\\s*,\\s*(?:\\d+)[-]?)?"); // birth year
+      REGEX_FOR_INTEGRATED_NAME_PART // last name
+      + "(?:\\s*,\\s*" // delimiter between first and last names
+      + REGEX_FOR_INTEGRATED_NAME_PART // first name
+      + REGEX_FOR_INTEGRATED_MIDDLE_INITIAL + ")?" // middle
+      // initial
+      + "(?:\\s*,\\s*(?:\\d+)[-]?)?"); // birth year
 
 
   static void main(String[] args) {
 
     def config = new ConfigSlurper().parse(new File('config.groovy').toURL())
 
-    def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
-    def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
+        def sql = Sql.newInstance(config.old_db_url,config.old_db_user, config.old_db_pwd)
+        def newsql = Sql.newInstance(config.new_db_url,config.new_db_user, config.new_db_pwd)
 
-    // These can take a really long time if there is a lot of data - so log when we start and stop
+        // These can take a really long time if there is a lot of data - so log when we start and stop
 
-    newsql.execute("truncate attachment cascade")
-    newsql.execute("truncate actionlog cascade")
-    newsql.execute("truncate submission cascade")
-    newsql.execute("truncate custom_action_value cascade")
+        newsql.execute("truncate attachment cascade")
+        newsql.execute("truncate actionlog cascade")
+        newsql.execute("truncate submission cascade")
+        newsql.execute("truncate custom_action_value cascade")
 
 
-    // Main driver query - for each submission in old vireo
-    int nameExceptions = 0;
+        // Main driver query - for each submission in old vireo
+        int nameExceptions = 0;
     int customActions = 0;
-    sql.eachRow("select * from vireosubmission order by submission_id asc"){
+    sql.eachRow("select * from vireosubmission where collection_id = "+config.old_collection_id +" order by submission_id asc"){
 
       row ->
 
@@ -83,80 +83,80 @@ class SubmissionMigrator {
         committeeApprovalDate = new java.sql.Date(System.currentTimeMillis());
 
       def params = [row.submission_id, getUmiRelease(row.umi), row.approval_date, row.college, committeeApprovalDate, row.committee_email_address,
-        row.email_hash, null, getDegree(sql, row.item_id),
-        getDegreeLevel(sql, row.item_id), getDepartment(sql, row.item_id), getDepositId(sql, row.item_id), getAbstract(sql, row.item_id),
-        getKeywords(sql, row.item_id), getDocumentTitle(sql, row.item_id), getType(sql, row.item_id), getGraduationMonth(sql, row.item_id),
-        getGraduationYear(sql, row.item_id), new java.sql.Date(System.currentTimeMillis()), "Migrated from old vireo system.",
-        row.license_agreement_date, getMajor(sql, row.item_id), getSubStatus(row.status),
-        row.year_of_birth, fname, lname, mname, row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), getEmbargoType(newsql, row.embargo_name), row.applicant_id]
+                    row.email_hash, null, getDegree(sql, row.item_id),
+                    getDegreeLevel(sql, row.item_id), getDepartment(sql, row.item_id), getDepositId(sql, row.item_id), getAbstract(sql, row.item_id),
+                    getKeywords(sql, row.item_id), getDocumentTitle(sql, row.item_id), row.degree_type, getGraduationMonth(sql, row.item_id),
+                    getGraduationYear(sql, row.item_id), new java.sql.Date(System.currentTimeMillis()), "Migrated from old vireo system.",
+                    row.license_agreement_date, getMajor(sql, row.item_id), getSubStatus(row.status),
+                    row.year_of_birth, fname, lname, mname, row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), getEmbargoType(newsql, row.embargo_name), row.applicant_id];
 
       // Fix lastactionlog and lastactionlogentry
 
       newsql.execute '''insert into submission (
-                        id,                     
-                        umirelease,                     
-                        approvaldate,                   
-                        college,                        
-                        committeeapprovaldate,                  
-                        committeecontactemail,                  
-                        committeeemailhash,                     
-                        committeeembargoapprovaldate,                   
-                        degree,                 
-                        degreelevel,                    
-                        department,                     
-                        depositid,                      
-                        documentabstract,                       
-                        documentkeywords,                       
-                        documenttitle,                  
-                        documenttype,                   
-                        graduationmonth,                        
-                        graduationyear,                 
-                        lastactionlogdate, 
-                        lastactionlogentry,                     
-                        licenseagreementdate,                   
-                        major,                  
-                        statename,                      
-                        studentbirthyear,                       
-                        studentfirstname,                       
-                        studentlastname,                        
-                        studentmiddlename,                      
-                        submissiondate,                 
-                        assignee_id,                    
-                        embargotype_id,                 
-                        submitter_id)
-                        values (
-                        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-                        )''', params
+      id,                     
+      umirelease,                     
+      approvaldate,                   
+      college,                        
+      committeeapprovaldate,                  
+      committeecontactemail,                  
+      committeeemailhash,                     
+      committeeembargoapprovaldate,                   
+      degree,                 
+      degreelevel,                    
+      department,                     
+      depositid,                      
+      documentabstract,                       
+      documentkeywords,                       
+      documenttitle,                  
+      documenttype,                   
+      graduationmonth,                        
+      graduationyear,                 
+      lastactionlogdate, 
+      lastactionlogentry,                     
+      licenseagreementdate,                   
+      major,                  
+      statename,                      
+      studentbirthyear,                       
+      studentfirstname,                       
+      studentlastname,                        
+      studentmiddlename,                      
+      submissiondate,                 
+      assignee_id,                    
+      embargotype_id,                 
+      submitter_id)
+      values (
+          ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+          )''', params;
 
-      // Migrate custom action definitions.
-      if (row.custom_actions_completed != null) {
-        def actions = row.custom_actions_completed.tokenize(",");
-        for (String action : actions) {
+          // Migrate custom action definitions.
+          if (row.custom_actions_completed != null) {
+            def actions = row.custom_actions_completed.tokenize(",");
+            for (String action : actions) {
 
-          action = action.trim();
+              action = action.trim();
 
-          // check if the definition exists
-          def definition = newsql.firstRow "select id from custom_action_definition where id = ?", [Integer.valueOf(action)];
+              // check if the definition exists
+              def definition = newsql.firstRow "select id from custom_action_definition where id = ?", [Integer.valueOf(action)];
 
-          if (definition != null) {
+              if (definition != null) {
 
-            def actionParams = [customActions++, true, Integer.valueOf(action),row.submission_id]
-            newsql.execute '''insert into custom_action_value (id, value, definition_id, submission_id) values (?,?,?,?)''', actionParams;
+                def actionParams = [customActions++, true, Integer.valueOf(action),row.submission_id]
+                    newsql.execute '''insert into custom_action_value (id, value, definition_id, submission_id) values (?,?,?,?)''', actionParams;
 
+              }
+            }
           }
-        }
-      }
 
     }
 
     println("Student name exceptions: "+nameExceptions);
     // Update sequence counter
 
-    def row1 = newsql.firstRow("select (max(id) + 1) max  from submission")
-    newsql.execute("alter sequence seq_submission restart with " + row1.max )
+    def row1 = newsql.firstRow("select (max(id) + 1) max  from submission");
+        newsql.execute("alter sequence seq_submission restart with " + row1.max );
 
-    def row2 = newsql.firstRow("select (max(id) + 1) max  from custom_action_value")
-    newsql.execute("alter sequence seq_custom_action_value restart with " + row2.max )
+        def row2 = newsql.firstRow("select (max(id) + 1) max  from custom_action_value");
+        newsql.execute("alter sequence seq_custom_action_value restart with " + row2.max );
 
   }
 
@@ -165,8 +165,8 @@ class SubmissionMigrator {
   static boolean getUmiRelease(Integer val) {
     if (val == null || val == 0)
       return false
-    else
-      return true
+          else
+            return true
   }
 
   // Get metadata value for degree
@@ -180,9 +180,9 @@ class SubmissionMigrator {
   static Integer getDegreeLevel(Sql sql, Integer id) {
     def degree = getMetadataValue(sql, id, getMetadataFieldId(sql,"thesis","degree","level"))
 
-    if (degree == null) return null
-    if (degree.equals("Doctoral")) return 3
-    if (degree.equals("Masters")) return 2
+        if (degree == null) return null
+            if (degree.equals("Doctoral")) return 3
+                if (degree.equals("Masters")) return 2
   }
 
   // Get value for department from metadata table
@@ -196,14 +196,6 @@ class SubmissionMigrator {
   static String getAbstract(Sql sql, Integer id) {
     return getMetadataValue(sql, id, getMetadataFieldId(sql,"dc","description","abstract"));
   }
-
-
-  // Get type/genre - such as thesis
-
-  static String getType(Sql sql, Integer id) {
-    return getMetadataValue(sql, id, getMetadataFieldId(sql,"dc","type","genre"));
-  }
-
 
   // Get submission title
 
@@ -221,7 +213,13 @@ class SubmissionMigrator {
   // Get identifier URI
 
   static String getDepositId(Sql sql, Integer id) {
-    return getMetadataValue(sql, id, getMetadataFieldId(sql,"dc","identifier","uri"));
+    String depositId =  getMetadataValue(sql, id, getMetadataFieldId(sql,"dc","identifier","uri"));
+
+    // Correction for TAMU data, this shouldn't effect anyone else
+    if (depositId != null)
+    depositId = depositId.replaceAll("http://handle.tamu.edu/","http://hdl.handle.net/");
+    
+    return depositId;
   }
 
   // Get major - degree/discipline
@@ -237,7 +235,7 @@ class SubmissionMigrator {
     def ret = ""
 
 
-    def fieldId = getMetadataFieldId(sql, "dc","subject",null);
+        def fieldId = getMetadataFieldId(sql, "dc","subject",null);
 
 
     sql.eachRow("select text_value from metadatavalue where  metadatavalue.item_id = " + id + " and metadata_field_id = "+fieldId){
@@ -296,10 +294,10 @@ class SubmissionMigrator {
 
     def rows = sql.rows("select text_value from metadatavalue where metadatavalue.item_id = " + id + " and metadata_field_id = " + mv)
 
-    if (rows[0] != null) {
-      return rows[0].text_value
-    } else
-      return null
+        if (rows[0] != null) {
+          return rows[0].text_value
+        } else
+          return null
   }
 
   static String getMetadataFieldId(Sql sql, String schema, String element, String qualifier) {
@@ -329,11 +327,12 @@ class SubmissionMigrator {
   static String getSubStatus(Integer stat) {
 
     def state = [10:'InProgress', 20:'Submitted', 30:'InReview', 40:'NeedsCorrection', 50:'WaitingOnRequirements', 60:'Approved',
-          70:'PendingPublication', 80:'Published', 90:'OnHold', 100:'Withdrawn', 110:'Cancelled']
+                 70:'PendingPublication', 80:'Published', 90:'OnHold', 100:'Withdrawn', 110:'Cancelled']
 
-    return state[stat]
+                     return state[stat]
   }
 }
+
 
 
 

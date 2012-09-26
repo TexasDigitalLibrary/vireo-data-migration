@@ -5,7 +5,15 @@ old_db_url = "jdbc:postgresql://hostname:port/database_name"
 old_db_user = "user"
 old_db_pwd = "pass"
 old_asset_path = "/mnt/old_vireo/assetstore/" 
-old_entity_id = "school.edu" // Identifiers are typicaly you school's dns name.
+
+// Old vireo may contain multiple instances in one vireo install. You need to
+// identify which of those instances to migrate out. The first, entity_id,
+// paramater is required in order to export the required settings. The later
+// identifies which dspace collection that instance is associated with. You can
+// find the collection_id by looking at xmlui.vireo.collection.[entity_id] or
+// xmlui.vireo.default.collection in dspace.cfg.
+old_entity_id = "school.edu"
+old_collection_id = 1
 
 
 // New vireo installation information
@@ -23,3 +31,4 @@ admin_first = "Migration"
 admin_last = "Admin"
 admin_netid = null 
 admin_password = "changeme"
+
