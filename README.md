@@ -35,6 +35,7 @@ These upgrade scripts only work for a postgresql to postgresql migration.
   - `old_db_pwd`:  Database password
   - `old_asset_path`: The path to DSpace's assetstore (with a trailing slash)
   - `old_entity_id`: The vireo instance id, typically this is your schools DNS name (i.e. tamu.edu, ut.edu)
+  - `old_collection_id`: The dspace collection id which contains submissions. You can find this by looking in your dspace.cfg's `xmlui.vireo.collection.[entity-id]` or `xmlui.vireo.default.collection`  
 
   **For your new vireo 1.8 installation**
   - `new_db_url`: The JDBC URL for the new database
