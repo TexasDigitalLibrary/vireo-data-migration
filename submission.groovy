@@ -86,7 +86,7 @@ class SubmissionMigrator {
                     row.email_hash, null, getDegree(sql, row.item_id),
                     getDegreeLevel(sql, row.item_id), getDepartment(sql, row.item_id), getDepositId(sql, row.item_id), getAbstract(sql, row.item_id),
                     getKeywords(sql, row.item_id), getDocumentTitle(sql, row.item_id), row.degree_type, getGraduationMonth(sql, row.item_id),
-                    getGraduationYear(sql, row.item_id), new java.sql.Date(System.currentTimeMillis()), "Migrated from old vireo system.",
+                    getGraduationYear(sql, row.item_id), new java.sql.Date(System.currentTimeMillis()), "Submission imported into Vireo 1.8.",
                     row.license_agreement_date, getMajor(sql, row.item_id), getSubStatus(row.status),
                     row.year_of_birth, fname, lname, mname, row.submission_date, (row.assigned_to == -1 ?null:row.assigned_to), getEmbargoType(newsql, row.embargo_name), row.applicant_id];
 
