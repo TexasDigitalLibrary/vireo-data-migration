@@ -41,7 +41,9 @@ class committee_migrator {
 
       row ->
 
-      if (submissionExists(newsql, row.submission_id)) {
+      if (!submissionExists(newsql, row.submission_id)) {
+        return;
+      }
 
 
         def name = row.text_value
@@ -118,7 +120,6 @@ class committee_migrator {
                         values (
                             ?,?,?,?,?,?,?
                             )''', params;
-      } // If submission exists
     } // for each row
 
     println("Committee name exceptions= "+nameExceptions);

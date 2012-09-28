@@ -54,81 +54,83 @@ class item_migrator {
     ''') {
           row ->
 
-          if (submissionExists(newsql, row.submission_id)) {
+          if (!submissionExists(newsql, row.submission_id)) {
+            return;
+          }
 
 
-            //public enum AttachmentType {
-            // UNKNOWN,
-            // PRIMARY,
-            // SUPPLEMENTAL,
-            // LICENSE,
-            // ARCHIVED,
-            // FEEDBACK
+          //public enum AttachmentType {
+          // UNKNOWN,
+          // PRIMARY,
+          // SUPPLEMENTAL,
+          // LICENSE,
+          // ARCHIVED,
+          // FEEDBACK
 
-            int type = 0; // unknown
-            if ("ORIGINAL".equals(row.bundle_name) || "CONTENT".equals(row.bundle_name)) {
+          int type = 0; // unknown
+          if ("ORIGINAL".equals(row.bundle_name) || "CONTENT".equals(row.bundle_name)) {
 
-              if (row.primary_bitstream_id == row.bitstream_id) {
-                type = 1; // Primary
-              } else {
-                type = 2; // Supplemental
-              }
-            } else if ("LICENSE".equals(row.bundle_name)) {
-              type = 3; // license
-            } else if ("ARCHIVE".equals(row.bundle_name)) {
-              type = 4; // Archived
-            } else if ("NOTES".equals(row.bundle_name)) {
-              type = 5; // feedback
+            if (row.primary_bitstream_id == row.bitstream_id) {
+              type = 1; // Primary
+            } else {
+              type = 2; // Supplemental
             }
+          } else if ("LICENSE".equals(row.bundle_name)) {
+            type = 3; // license
+          } else if ("ARCHIVE".equals(row.bundle_name)) {
+            type = 4; // Archived
+          } else if ("NOTES".equals(row.bundle_name)) {
+            type = 5; // feedback
+          }
 
-            def file_path = name_to_path(row.internal_id)
+          def file_path = name_to_path(row.internal_id)
 
-            // Make a link from the archive into the attachments directory
-            // We should probably create a UUID and 'mv' the asset into the attachments directory - with that nam
+          // Make a link from the archive into the attachments directory
+          // We should probably create a UUID and 'mv' the asset into the attachments directory - with that nam
 
-            try {
-              def cmd =  "cp ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
+          try {
+            def cmd =  "cp ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
 
-              if (config.link_assets)
-                cmd = "ln -s ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
+            if (config.link_assets)
+              cmd = "ln -s ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
 
-              def proc = cmd.execute()
-              proc.waitFor()
-            } catch (Exception ex) {
-              println("Exception " + ex);
-            }
+            def proc = cmd.execute()
+            proc.waitFor()
+          } catch (Exception ex) {
+            println("Exception " + ex);
+          }
 
-            // If name is not unique add on a number
+          // If name is not unique add on a number
 
-            def subname = row.name
-            def count = 1
+          def subname = row.name
+          def count = 1
 
-            // This has a problem where if there is more than two submissions with the same name
-            // they get the suffix of '12' and then '123' - unique - yes - but we should probably
-            // shave off the trailing number before adding the new one on
+          // This has a problem where if there is more than two submissions with the same name
+          // they get the suffix of '12' and then '123' - unique - yes - but we should probably
+          // shave off the trailing number before adding the new one on
 
-            while(!is_name_unique(newsql, subname, row.submission_id)) {
-              //println("Fixing Name: " + subname)
-              def name_parts = subname.tokenize(".")
-              subname = name_parts[0] + count + "." + name_parts[1]
-              //println "\n\n** New Name: " + subname
-              count++
-            }
+          while(!is_name_unique(newsql, subname, row.submission_id)) {
+            //println("Fixing Name: " + subname)
+            def name_parts = subname.tokenize(".")
+            subname = name_parts[0] + count + "." + name_parts[1]
+            //println "\n\n** New Name: " + subname
+            count++
+          }
 
-            // Need to figure out which is the primary document. Currently default to 1 (all are primary)
+          // Need to figure out which is the primary document. Currently default to 1 (all are primary)
 
-            def params = [
-              row.bitstream_id,
-              row.internal_id + "|" + row.mimetype,
-              row.last_modified,
-              subname,
-              type,
-              row.applicant_id,
-              row.submission_id
-            ]
+          def params = [
+            row.bitstream_id,
+            row.internal_id + "|" + row.mimetype,
+            row.last_modified,
+            subname,
+            type,
+            row.applicant_id,
+            row.submission_id
+          ]
 
-            if (row.name != null)  {
-              newsql.execute('''insert into attachment (
+          if (row.name != null)  {
+            newsql.execute('''insert into attachment (
                               id,                 
                               data,                       
                               date,                       
@@ -141,8 +143,7 @@ class item_migrator {
             ?,?,?,?,?,?,?
             )''', params);
 
-            }
-          } // If submission exists
+          }
         } // for each row
 
     // Update sequence counter

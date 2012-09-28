@@ -18,18 +18,20 @@ class log_migrator {
 
       // Attachment ID ??
 
-      if (submissionExists(newsql, row.submission_id)) {
+      if (!submissionExists(newsql, row.submission_id)) {
+        return;
+      }
 
-        def person_id = null;
-        if (personExists(newsql,row.eperson_id))
-          person_id = row.eperson_id;
+      def person_id = null;
+      if (personExists(newsql,row.eperson_id))
+        person_id = row.eperson_id;
 
 
-        def params = [
-          row.log_id, row.date, row.log_entry, (row.private==null?false:row.private), getSubStatus(row.submission_status), null, person_id, row.submission_id
-        ]
+      def params = [
+        row.log_id, row.date, row.log_entry, (row.private==null?false:row.private), getSubStatus(row.submission_status), null, person_id, row.submission_id
+      ]
 
-        newsql.execute '''insert into actionlog (
+      newsql.execute '''insert into actionlog (
                           id,                     
                           actiondate,                     
                           entry,                  
@@ -42,7 +44,6 @@ class log_migrator {
                           values (
                               ?,?,?,?,?,?,?,?
                               )''', params
-      } // if submission exists
 
     } // for each row
 
@@ -57,9 +58,11 @@ class log_migrator {
     sql.eachRow("select submission_id, status from vireosubmission order by submission_id asc "){
       row->
 
-      if (submissionExists(newsql, row.submission_id)) {
+      if (!submissionExists(newsql, row.submission_id)) {
+        return;
+      }
 
-        newsql.execute('''insert into actionlog(id,actiondate,entry,privateflag,submissionstate,attachment_id,person_id,submission_id) values (
+      newsql.execute('''insert into actionlog(id,actiondate,entry,privateflag,submissionstate,attachment_id,person_id,submission_id) values (
                 nextval('seq_actionlog'),
                 localtimestamp,
                 ?,
@@ -68,9 +71,7 @@ class log_migrator {
                         null, 
                         null,
                         ?)
-                        ''', ["Submission imported into Vireo 1.8.", getSubStatus(row.status), row.submission_id])
-      } // If submission exists
-
+                        ''', ["Submission imported into Vireo 1.8.", getSubStatus(row.status), row.submission_id]);
     } // For each row
 
 
