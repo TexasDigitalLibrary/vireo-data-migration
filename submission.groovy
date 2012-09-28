@@ -67,6 +67,11 @@ class SubmissionMigrator {
             def name_parts = name.tokenize(",");
             fname = name_parts[1].trim();
             lname = name_parts[0].trim();
+      
+      if (fname.contains(" ")) {
+        mname = fname.substring(fname.indexOf(" "), fname.length()).trim();
+        fname = fname.substring(0,fname.indexOf(" ")).trim();
+      }
           } catch (RuntimeException re) {
             lname = name;
           }
@@ -332,6 +337,7 @@ class SubmissionMigrator {
                      return state[stat]
   }
 }
+
 
 
 
