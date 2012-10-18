@@ -83,19 +83,32 @@ class item_migrator {
             type = 5; // feedback
           }
 
-          def file_path = name_to_path(row.internal_id)
+          def old_file_path = name_to_path(row.internal_id)
+          def uuid = UUID.randomUUID().toString();
+      
+          String name1 = uuid.substring(0, 2);
+          String name2 = uuid.substring(2, 4);
+          String name3 = uuid.substring(4, 6);
+          String name4 = uuid.substring(6, 8);
+      
+          String hashDir = uuid.substring(0, 2) + File.separator + uuid.substring(2, 4) + File.separator + uuid.substring(4, 6) + File.separator + uuid.substring(6, 8);
+      
 
           // Make a link from the archive into the attachments directory
           // We should probably create a UUID and 'mv' the asset into the attachments directory - with that nam
 
           try {
-            def cmd =  "cp ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
-
-            if (config.link_assets)
-              cmd = "ln -s ${config.old_asset_path}/" + file_path + "/" + row.internal_id + " ${config.new_asset_path}/" + row.internal_id
-
-            def proc = cmd.execute()
-            proc.waitFor()
+              // Make the hash directory;
+              runCommand("mkdir -p ${config.new_asset_path}/${hashDir}");
+        
+        
+              if (config.link_assets)
+                  // Save time and just link the assets.
+                  runCommand("ln -s ${config.old_asset_path}/${old_file_path}/${row.internal_id}   ${config.new_asset_path}/${hashDir}/${uuid}");
+              else
+                  // Actualy copy the assets for real
+                  runCommand("cp ${config.old_asset_path}/${old_file_path}/${row.internal_id}   ${config.new_asset_path}/${hashDir}/${uuid}");
+        
           } catch (Exception ex) {
             println("Exception " + ex);
           }
@@ -115,13 +128,11 @@ class item_migrator {
             subname = name_parts[0] + count + "." + name_parts[1]
             //println "\n\n** New Name: " + subname
             count++
-          }
-
-          // Need to figure out which is the primary document. Currently default to 1 (all are primary)
+          }     
 
           def params = [
             row.bitstream_id,
-            row.internal_id + "|" + row.mimetype,
+            uuid + "|" + row.mimetype,
             row.last_modified,
             subname,
             type,
@@ -190,6 +201,12 @@ class item_migrator {
       return false
 
   }
+  
+  static void runCommand(String command) {
+    def proc = command.execute();
+    proc.waitFor();
+  }
 
 }
+
 
