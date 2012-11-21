@@ -15,13 +15,19 @@ old_asset_path = "/mnt/old_vireo/assetstore/"
 old_entity_id = "school.edu"
 old_collection_id = 1
 
-
 // New vireo installation information
 new_db_url = "jdbc:postgresql://hostname:port/database_name"
 new_db_user = "user"
 new_db_pwd = "pass"
 new_asset_path = "/mnt/new_viero/attachments/"
-link_assets = true // Should assets be copied or just symlinked
+
+// How should files be migrated: copy ("cp"), move ("mv"), or symlinked ("ln").
+asset_command = "cp" // possible values: cp, mv, ln
+
+// Should the netid field be translated during migration?
+unscope_netid = false // Remove everything after the "@" sign.
+uppercase_netid = false  // Force everything to be upper case.
+lowercase_netid = false  // Force everything to be lower case.
 
 
 // If you would like an admin account created then turn these settings on.

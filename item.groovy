@@ -101,14 +101,19 @@ class item_migrator {
               // Make the hash directory;
               runCommand("mkdir -p ${config.new_asset_path}/${hashDir}");
         
-        
-              if (config.link_assets)
-                  // Save time and just link the assets.
-                  runCommand("ln -s ${config.old_asset_path}/${old_file_path}/${row.internal_id}   ${config.new_asset_path}/${hashDir}/${uuid}");
-              else
+              if ("cp".equals(config.asset_command)) {
                   // Actualy copy the assets for real
                   runCommand("cp ${config.old_asset_path}/${old_file_path}/${row.internal_id}   ${config.new_asset_path}/${hashDir}/${uuid}");
-        
+
+              } else if ("mv".equals(config.asset_command)) {
+                  // Move the files destroying the original
+                  runCommand("mv ${config.old_asset_path}/${old_file_path}/${row.internal_id}   ${config.new_asset_path}/${hashDir}/${uuid}");
+
+              } else if ("ln".equals(config.asset_command)) {
+                  // Link the files preserving the original and saving space.
+                  runCommand("ln -s ${config.old_asset_path}/${old_file_path}/${row.internal_id}   ${config.new_asset_path}/${hashDir}/${uuid}");
+
+              }
           } catch (Exception ex) {
             println("Exception " + ex);
           }

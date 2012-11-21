@@ -26,9 +26,22 @@ class person_migrator {
 			
 			String by = getBirthYear(sql, row.eperson_id) 
 			if (by == null) by = ''
+			
+      
+      def netid = row.netid;
+      if (netid != null) {
+        if (config.unscope_netid)
+          netid = netid.substring(0,netid.indexOf("@"));
+
+        if (config.uppercase_netid)
+          netid = netid.toUpperCase();
+
+        if (config.lowercase_netid)
+          netid = netid.toLowerCase();
+      }
+
 				
-				
-			def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), null, row.email,  row.firstname, row.lastname, row.initials, row.netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
+			def params = [row.eperson_id, (by == ""?null:Integer.parseInt(by)), getCollege(sql, row.eperson_id), getDegree(sql, row.eperson_id),  getDepartment(sql, row.eperson_id), row.email, row.tdledupersonmajor, getCurrentPhoneNumber(sql, row.eperson_id), getCurrentAddress(sql, row.eperson_id), null, row.email,  row.firstname, row.lastname, row.initials, netid, getPermanentEmail(sql, row.eperson_id), getPermanentPhone(sql, row.eperson_id), getPermanentAddress(sql, row.eperson_id), getRole(sql, row.eperson_id)]
 			
 			// Insert into new vireo table
 			

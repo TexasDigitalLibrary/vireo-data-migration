@@ -21,6 +21,8 @@ echo "[Step: 2/6] People migration completed"
 
 echo ""
 
+exit
+
 echo "[Step: 2/6] Starting submission migration"
 groovy -cp $CLASSPATH submission.groovy
 if [[ $? -ne 0 ]]; then exit 1; fi
