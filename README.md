@@ -42,10 +42,14 @@ These upgrade scripts only work for a postgresql to postgresql migration.
   - `new_db_user`: Database username
   - `new_db_pwd`: Database password
   - `new_asset_path`: The path to Vireo2's assetstore. This directory must exist, and the path should end with a trailing slash.
-  - `link_assets`: true or false. Whether you want the files copied into the new asset store or just symlinked. Linking is useful while testing because it is quicker, however for a production deployment you should always set this to false.
+  - `asset_command`: Whether you would like files copied ("cp"), moved ("mv"), or symlinked ("ln"). Linking is the fastest, while copying preserves the original but is slower, finally the move command is faster than a copy but destroy's the original.
+  - `unscope_netid`: true or false. Whether to strip the netid field of everything past the "@" sign.
+  - `uppercase_netid`: true or false. Whether to force the netid to be uppper case.
+  - `lowercase_netid`: true or false. Whether to force the netid to be lower case.
+
 
   **Migration Admin**
-  - `create_admin`: true or false. Whethey you would like a new administrative user to be created during the installation. This can be helpfull during testing to have an easy account to login with on the new system. If this flag is true, then set the following parameters.
+  - `create_admin`: true or false. Whether you would like a new administrative user to be created during the installation. This can be helpfull during testing to have an easy account to login with on the new system. If this flag is true, then set the following parameters.
   - `admin_email`: The email address of the new administrative user.
   - `admin_first`: The first name of the new administrative user.
   - `admin_last`: The last name of the new administrative user.
